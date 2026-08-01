@@ -72,6 +72,44 @@ export interface ServiceInput {
   enabled?: boolean;
 }
 
+export type ServiceTestInputType = typeof ServiceTestInputType[keyof typeof ServiceTestInputType];
+
+
+export const ServiceTestInputType = {
+  plex: 'plex',
+  sonarr: 'sonarr',
+  radarr: 'radarr',
+  lidarr: 'lidarr',
+  readarr: 'readarr',
+  tautulli: 'tautulli',
+  qbittorrent: 'qbittorrent',
+  sabnzbd: 'sabnzbd',
+  jellyfin: 'jellyfin',
+  overseerr: 'overseerr',
+  prowlarr: 'prowlarr',
+  bazarr: 'bazarr',
+  portainer: 'portainer',
+  other: 'other',
+} as const;
+
+export interface ServiceTestInput {
+  type: ServiceTestInputType;
+  url: string;
+  apiKey?: string;
+  username?: string;
+  password?: string;
+}
+
+export interface ServiceTestResult {
+  success: boolean;
+  online: boolean;
+  message: string;
+  /** @nullable */
+  responseTimeMs: number | null;
+  /** @nullable */
+  version: string | null;
+}
+
 export interface ServiceUpdate {
   name?: string;
   url?: string;

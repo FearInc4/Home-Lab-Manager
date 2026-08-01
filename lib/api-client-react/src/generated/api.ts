@@ -28,6 +28,8 @@ import type {
   ServiceInput,
   ServiceStats,
   ServiceStatus,
+  ServiceTestInput,
+  ServiceTestResult,
   ServiceUpdate
 } from './api.schemas';
 
@@ -282,6 +284,77 @@ export const useCreateService = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateServiceMutationOptions(options));
+    }
+
+export const getTestServiceConnectionUrl = () => {
+
+
+
+
+  return `/api/services/test`
+}
+
+/**
+ * @summary Test a media service connection without saving it
+ */
+export const testServiceConnection = async (serviceTestInput: ServiceTestInput, options?: Parameters<typeof customFetch>[1]): Promise<ServiceTestResult> => {
+
+  return customFetch<ServiceTestResult>(getTestServiceConnectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(serviceTestInput)
+  }
+);}
+
+
+
+
+
+export const getTestServiceConnectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testServiceConnection>>, TError,{data: BodyType<ServiceTestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testServiceConnection>>, TError,{data: BodyType<ServiceTestInput>}, TContext> => {
+
+const mutationKey = ['testServiceConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testServiceConnection>>, {data: BodyType<ServiceTestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  testServiceConnection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestServiceConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof testServiceConnection>>>
+    export type TestServiceConnectionMutationBody = BodyType<ServiceTestInput>
+    export type TestServiceConnectionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Test a media service connection without saving it
+ */
+export const useTestServiceConnection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testServiceConnection>>, TError,{data: BodyType<ServiceTestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof testServiceConnection>>,
+        TError,
+        {data: BodyType<ServiceTestInput>},
+        TContext
+      > => {
+      return useMutation(getTestServiceConnectionMutationOptions(options));
     }
 
 export const getGetServiceUrl = (id: number,) => {

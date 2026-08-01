@@ -8,7 +8,10 @@ import {
   useUpdateService,
   getGetServiceQueryKey,
   getListServicesQueryKey,
+  useTestServiceConnection,
   type ServiceInputType,
+  type ServiceTestInputType,
+  type ServiceTestResult,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -17,11 +20,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ServiceIcon } from '@/components/service-icon';
 import { getServiceConfig, SERVICE_CONFIGS } from '@/lib/service-utils';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Wifi, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Link } from 'wouter';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const serviceFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -53,6 +56,8 @@ export default function ServiceForm() {
 
   const createService = useCreateService();
   const updateService = useUpdateService();
+  const testConnection = useTestServiceConnection();
+  const [testResult, setTestResult] = useState<ServiceTestResult | null>(null);
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceFormSchema),
@@ -80,6 +85,44 @@ export default function ServiceForm() {
       });
     }
   }, [service, isEditing, form]);
+
+  const runConnectionTest = async () => {
+    const valid = await form.trigger(['type', 'url']);
+    if (!valid) {
+      toast({
+        title: 'Complete the service details first',
+        description: 'Select a service type and enter a valid URL before testing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const values = form.getValues();
+    setTestResult(null);
+    testConnection.mutate(
+      {
+        data: {
+          type: values.type as ServiceTestInputType,
+          url: values.url,
+          apiKey: values.apiKey,
+          username: values.username,
+          password: values.password,
+        },
+      },
+      {
+        onSuccess: (result) => setTestResult(result),
+        onError: (error) => {
+          setTestResult({
+            success: false,
+            online: false,
+            message: error instanceof Error ? error.message : 'Could not reach the test endpoint',
+            responseTimeMs: null,
+            version: null,
+          });
+        },
+      },
+    );
+  };
 
   const onSubmit = (values: ServiceFormValues) => {
     if (isEditing) {
@@ -258,6 +301,46 @@ export default function ServiceForm() {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="rounded-md border border-border bg-muted/40 p-4 space-y-3">
+              <div>
+                <p className="font-medium">Test before saving</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  The check runs from the server and does not save this configuration.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={() => void runConnectionTest()}
+                disabled={testConnection.isPending}
+                data-testid="button-test-connection"
+              >
+                {testConnection.isPending ? <Loader2 size={16} className="animate-spin" /> : <Wifi size={16} />}
+                {testConnection.isPending ? 'Testing connection…' : 'Test Connection'}
+              </Button>
+              {testResult && (
+                <div
+                  className={`flex items-start gap-2 rounded-md border px-3 py-2 text-sm ${
+                    testResult.success
+                      ? 'border-primary/30 bg-primary/10 text-primary'
+                      : 'border-destructive/30 bg-destructive/10 text-destructive'
+                  }`}
+                  role="status"
+                  data-testid="connection-test-result"
+                >
+                  {testResult.success ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <XCircle size={16} className="mt-0.5 shrink-0" />}
+                  <div>
+                    <p className="font-medium">{testResult.success ? 'Connection successful' : 'Connection failed'}</p>
+                    <p className="mt-0.5 opacity-90">
+                      {testResult.message}
+                      {testResult.responseTimeMs != null ? ` · ${testResult.responseTimeMs}ms` : ''}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">

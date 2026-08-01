@@ -19,5 +19,8 @@ export * from './serviceStats';
 export * from './serviceStatsData';
 export * from './serviceStatus';
 export * from './serviceSummary';
+export * from './serviceTestInput';
+export * from './serviceTestInputType';
+export * from './serviceTestResult';
 export * from './serviceType';
 export * from './serviceUpdate';

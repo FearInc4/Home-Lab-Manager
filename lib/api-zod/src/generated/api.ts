@@ -59,6 +59,26 @@ export const CreateServiceResponse = zod.object({
 
 
 /**
+ * @summary Test a media service connection without saving it
+ */
+export const TestServiceConnectionBody = zod.object({
+  "type": zod.enum(['plex', 'sonarr', 'radarr', 'lidarr', 'readarr', 'tautulli', 'qbittorrent', 'sabnzbd', 'jellyfin', 'overseerr', 'prowlarr', 'bazarr', 'portainer', 'other']),
+  "url": zod.string(),
+  "apiKey": zod.string().optional(),
+  "username": zod.string().optional(),
+  "password": zod.string().optional()
+})
+
+export const TestServiceConnectionResponse = zod.object({
+  "success": zod.boolean(),
+  "online": zod.boolean(),
+  "message": zod.string(),
+  "responseTimeMs": zod.number().nullable(),
+  "version": zod.string().nullable()
+})
+
+
+/**
  * @summary Get a service by ID
  */
 export const GetServiceParams = zod.object({

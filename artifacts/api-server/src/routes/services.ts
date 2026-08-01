@@ -17,12 +17,15 @@ import {
   RestartServiceResponse,
   GetServiceStatsParams,
   GetServiceStatsResponse,
+  TestServiceConnectionBody,
+  TestServiceConnectionResponse,
 } from "@workspace/api-zod";
 import {
   checkServiceStatus,
   getServiceStats,
   restartSonarrLike,
   restartPlex,
+  testServiceConnection,
 } from "../lib/serviceConnector";
 
 const router: IRouter = Router();
@@ -76,6 +79,35 @@ router.post("/services", async (req, res): Promise<void> => {
 });
 
 // Get service
+router.post("/services/test", async (req, res): Promise<void> => {
+  const parsed = TestServiceConnectionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  try {
+    const status = await testServiceConnection(parsed.data);
+    res.json(TestServiceConnectionResponse.parse({
+      success: status.online,
+      online: status.online,
+      message: status.online
+        ? `Connected${status.version ? ` · version ${status.version}` : ""}`
+        : status.error ?? "Connection failed",
+      responseTimeMs: status.responseTimeMs,
+      version: status.version,
+    }));
+  } catch (err: unknown) {
+    res.json(TestServiceConnectionResponse.parse({
+      success: false,
+      online: false,
+      message: String(err instanceof Error ? err.message : err),
+      responseTimeMs: null,
+      version: null,
+    }));
+  }
+});
+
 router.get("/services/:id", async (req, res): Promise<void> => {
   const params = GetServiceParams.safeParse(req.params);
   if (!params.success) {

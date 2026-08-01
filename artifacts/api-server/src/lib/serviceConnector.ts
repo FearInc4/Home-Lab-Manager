@@ -99,7 +99,20 @@ async function checkQbittorrent(service: Service): Promise<ServiceStatusResult> 
   const start = Date.now();
   try {
     const url = `${normalizeUrl(service.url)}/api/v2/app/version`;
-    const res = await fetchWithTimeout(url);
+    let res = await fetchWithTimeout(url);
+    if (res.status === 403 && service.username && service.password) {
+      const loginRes = await fetchWithTimeout(`${normalizeUrl(service.url)}/api/v2/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `username=${encodeURIComponent(service.username)}&password=${encodeURIComponent(service.password)}`,
+      });
+      if (!loginRes.ok) {
+        const responseTimeMs = Date.now() - start;
+        return { online: false, version: null, responseTimeMs, error: `Login failed (HTTP ${loginRes.status})`, checkedAt };
+      }
+      const cookie = loginRes.headers.get("set-cookie");
+      res = await fetchWithTimeout(url, cookie ? { headers: { Cookie: cookie } } : {});
+    }
     const responseTimeMs = Date.now() - start;
     if (!res.ok) return { online: false, version: null, responseTimeMs, error: `HTTP ${res.status}`, checkedAt };
     const version = await res.text();
@@ -172,6 +185,28 @@ export async function checkServiceStatus(service: Service): Promise<ServiceStatu
     default:
       return checkGeneric(service);
   }
+}
+
+export async function testServiceConnection(input: {
+  type: string;
+  url: string;
+  apiKey?: string;
+  username?: string;
+  password?: string;
+}): Promise<ServiceStatusResult> {
+  const now = new Date();
+  return checkServiceStatus({
+    id: 0,
+    name: "Connection test",
+    type: input.type,
+    url: input.url,
+    apiKey: input.apiKey ?? null,
+    username: input.username ?? null,
+    password: input.password ?? null,
+    enabled: true,
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 // ---------- Stats ----------
