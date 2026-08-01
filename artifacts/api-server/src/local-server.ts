@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import helmet from "helmet";
 import cors from "cors";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -111,6 +112,7 @@ function serviceNotFound(res: express.Response): void {
 }
 
 const app: Express = express();
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
