@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Media Homelab Manager"
+version = "1.0.0"
+id = "artifacts/homelab"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23301
+
+[services.development]
+run = "pnpm --filter @workspace/homelab run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/homelab", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/homelab/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23301"
+BASE_PATH = "/"

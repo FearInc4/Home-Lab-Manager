@@ -3,13 +3,20 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Media Homelab Manager API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: services
+    description: Media server service management
+  - name: downloads
+    description: Download management
+  - name: dashboard
+    description: Dashboard aggregates
+
 paths:
   /healthz:
     get:
@@ -24,6 +31,256 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # --- Services ---
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List all configured media services
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Add a new media service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Service created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    get:
+      operationId: getService
+      tags: [services]
+      summary: Get a service by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Service details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Update a service configuration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Updated service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Remove a service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+
+  /services/{id}/status:
+    get:
+      operationId: getServiceStatus
+      tags: [services]
+      summary: Get live status/health of a service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Service status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceStatus"
+
+  /services/{id}/restart:
+    post:
+      operationId: restartService
+      tags: [services]
+      summary: Restart a service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Restart triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+
+  /services/{id}/stats:
+    get:
+      operationId: getServiceStats
+      tags: [services]
+      summary: Get service-specific stats (library counts, session info, queue, etc.)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Service stats payload (shape varies by service type)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceStats"
+
+  # --- Downloads ---
+  /downloads:
+    get:
+      operationId: listDownloads
+      tags: [downloads]
+      summary: List all active downloads across all configured download clients
+      responses:
+        "200":
+          description: Downloads list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Download"
+
+  /downloads/{serviceId}/{hash}/pause:
+    post:
+      operationId: pauseDownload
+      tags: [downloads]
+      summary: Pause a download
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: number
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+
+  /downloads/{serviceId}/{hash}/resume:
+    post:
+      operationId: resumeDownload
+      tags: [downloads]
+      summary: Resume a paused download
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: number
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resumed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+
+  /downloads/{serviceId}/{hash}:
+    delete:
+      operationId: removeDownload
+      tags: [downloads]
+      summary: Remove a download (optionally with files)
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: number
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionResult"
+
+  # --- Dashboard ---
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get aggregated stats across all services for the dashboard
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +291,194 @@ components:
       required:
         - status
 
+    Service:
+      type: object
+      required: [id, name, type, url, enabled, createdAt]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        type:
+          type: string
+          enum: [plex, sonarr, radarr, lidarr, readarr, tautulli, qbittorrent, sabnzbd, jellyfin, overseerr, prowlarr, bazarr, portainer, other]
+        url:
+          type: string
+        apiKey:
+          type: ["string", "null"]
+        username:
+          type: ["string", "null"]
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+
+    ServiceInput:
+      type: object
+      required: [name, type, url]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [plex, sonarr, radarr, lidarr, readarr, tautulli, qbittorrent, sabnzbd, jellyfin, overseerr, prowlarr, bazarr, portainer, other]
+        url:
+          type: string
+        apiKey:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+        enabled:
+          type: boolean
+
+    ServiceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        apiKey:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+        enabled:
+          type: boolean
+
+    ServiceStatus:
+      type: object
+      required: [serviceId, online, responseTimeMs, checkedAt]
+      properties:
+        serviceId:
+          type: number
+        online:
+          type: boolean
+        version:
+          type: ["string", "null"]
+        responseTimeMs:
+          type: ["number", "null"]
+        error:
+          type: ["string", "null"]
+        checkedAt:
+          type: string
+
+    ServiceStats:
+      type: object
+      required: [serviceId, type]
+      properties:
+        serviceId:
+          type: number
+        type:
+          type: string
+        data:
+          type: object
+          description: Varies by service type. Can include library counts, active sessions, queue length, disk space, etc.
+          additionalProperties: true
+
+    Download:
+      type: object
+      required: [hash, name, serviceId, serviceName, serviceType, state, progress, size, downloadedSize, speed, eta, addedAt]
+      properties:
+        hash:
+          type: string
+        name:
+          type: string
+        serviceId:
+          type: number
+        serviceName:
+          type: string
+        serviceType:
+          type: string
+        state:
+          type: string
+          enum: [downloading, paused, completed, error, queued, seeding, checking, stalled]
+        progress:
+          type: number
+          description: Progress as 0-100
+        size:
+          type: number
+          description: Total bytes
+        downloadedSize:
+          type: number
+          description: Downloaded bytes
+        speed:
+          type: number
+          description: Download speed in bytes/sec
+        eta:
+          type: ["number", "null"]
+          description: Seconds remaining, null if unknown
+        category:
+          type: ["string", "null"]
+        savePath:
+          type: ["string", "null"]
+        addedAt:
+          type: string
+
+    ActionResult:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ServiceSummary:
+      type: object
+      required: [id, name, type, online]
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        type:
+          type: string
+        online:
+          type: boolean
+        version:
+          type: ["string", "null"]
+
+    Dashboard:
+      type: object
+      required: [services, totalDownloads, activeDownloads, totalDownloadSpeed]
+      properties:
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceSummary"
+        totalDownloads:
+          type: number
+        activeDownloads:
+          type: number
+        totalDownloadSpeed:
+          type: number
+          description: Combined bytes/sec across all download clients
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+
+    ActivityItem:
+      type: object
+      required: [id, serviceId, serviceName, serviceType, title, event, timestamp]
+      properties:
+        id:
+          type: string
+        serviceId:
+          type: number
+        serviceName:
+          type: string
+        serviceType:
+          type: string
+        title:
+          type: string
+        event:
+          type: string
+        timestamp:
+          type: string
+        posterUrl:
+          type: ["string", "null"]
