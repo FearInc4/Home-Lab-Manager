@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ui1Re-JLybhJKld3UQl5b"
+uri = "file://Homelab-Manager-macOS.zip"
+type = "unspecified"
+title = "Homelab Manager for macOS"
+description = "Standalone local macOS bundle with a one-click Homelab Manager.app launcher, start/stop scripts, local JSON storage, and setup instructions. Requires macOS 11+ and Node.js 20+."

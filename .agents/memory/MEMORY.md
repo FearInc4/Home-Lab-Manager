@@ -1,0 +1,1 @@
+- [macOS local packaging](macos-local-packaging.md) — the standalone bundle must include esbuild’s pino sidecar modules and resolve web assets beside the bundled server.
